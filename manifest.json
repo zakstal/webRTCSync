@@ -1,5 +1,5 @@
 {
-  "name": "Encrypted Bookmarks",
+  "name": "zaks Bookmarks",
   "version": "3.0",
   "manifest_version": 2,
   "description": "Store private bookmarks encrypted in Chrome's local storage.",
@@ -17,5 +17,15 @@
     "contextMenus",
     "storage",
     "tabs"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*/*"
+      ],
+      "js": [
+        "js/inject.js"
+      ]
+    }
   ]
 }

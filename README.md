@@ -1,19 +1,33 @@
-## Encrypted Bookmarks
-**Version 2.0 | July 5 2017**
+![Light bulb](https://github.com/zakstal/webRTCSync/blob/master/img/icon128.png)
+# WebRTC Sync
 
-Encrypted Bookmarks allows Chromium users to store private bookmarks encrypted in the browser's local storage. Bookmarks are added using the right-click context menu, and bookmarks are accessed via the extension toolbar.
+This chrome extension syncs video sources across browsers.
 
-The required permissions are explained [here](/DOCUMENTATION.md#permissions).
+## Loading
 
-#### How it works
+1. Clone the repository
+2. In chrome got to `window > Extension`
+3. In the new window click on `Load unpacked`
+4. Navigate to the root directory of this extension and hit enter.
 
-The extension generates a keypair on installation using asymmetric encryption (OpenPGP.js) - encrypting the private key with a user passphrase. To add a bookmark the `title` and `url` of a tab are encrypted using the public key. Bookmarks are decrypted on access using the private key - that is decrypted using the user passphrase.
+The extension will now be loaded into the browser.
 
-#### Download
 
-[Chrome Web Store](https://chrome.google.com/webstore/detail/encrypted-bookmarks/gdbjccpleamopncgakdgkbpejffpmoia)
+## Usage
 
----
+You need to have a friend who also has the extension loaded.
+Both you and your fiend should navigate to the video you want to watch together.
 
-To put into incognito mode.
-in Chrome extensions, Load unpacked, go to details, click switch to off, switch incognito on, click switch back on.
+### Initiator (you)
+1. click on the light bulb in your chrome extensions
+2. click on `Link players`
+3. Copy the code that appears and send to your friend
+
+### Receiver (your friend)
+1. Take the code you friend sent over and put it in the input.
+3. click on `Link players`
+
+When a connection is made the the word `Connected!` will appear and your videos will be synced.
+If you pause your video, your fiends video will be paused and visa versa.
+
+

@@ -1,9 +1,40 @@
 
-console.log('injected')
+console.log('injected', sendMessage)
 
-const sendMessage = (message, response) => {
-  chrome.runtime.sendMessage(message, response);
-}
+// const sendMessage = (message, response) => {
+//   chrome.runtime.sendMessage(message, response);
+// }
+
+const [
+  createElement,
+  setState,
+  getState,
+]= createElementCreator({
+  error: false,
+  message: ''
+})
+
+createElement('', {
+  parent: ['appendChild', 'body'],
+  render: function () {
+    return `
+      <div id="message" style="position: fixed; top: 0; left: 0; height: 10px; min-width: 10px; background: red;">
+        Welcome!
+      </div>
+    `
+  },
+  message: function (message) {
+    this.innerText(message);
+    // this.setStyle({
+    //   color: 'green'
+    // })
+  },
+  error: function(error) {
+    // this.setStyle({
+    //   color: 'red'
+    // })
+  }
+})
 
 let video = null;
 
@@ -28,6 +59,7 @@ const activate = (request, sender, sendResponse) => {
       message: 'Video playing',
       playState: 'progress',
       progress: video.currentTime,
+      now: Date.now(),
       event: e
     })
   }
@@ -50,6 +82,7 @@ const activate = (request, sender, sendResponse) => {
       error: false,
       message: 'Play video',
       playState: 'play',
+      progress: video.currentTime,
       event: e
     })
   }
@@ -62,17 +95,43 @@ const activate = (request, sender, sendResponse) => {
 }
 
 const progress = (message) => {
-  if (video.currentTime !== message.progress) {
-    video.currentTime = message.progress
+  console.log('progressing')
+  const millisec = message.now;
+  const nowMill = Date.now();
+  const lagSeconds = (nowMill - millisec) / 1000;
+
+  // adjust for the time delay in sending the message
+  const progress = message.progress + lagSeconds;
+  const currentTime = video.currentTime;
+
+  // current time more than a second ahead of the other players current time
+  const lowEnd = currentTime > (progress - 1)
+
+  // current time less than a second behind the other players current time
+  const highEnd = currentTime < (progress + 1)
+  if (lowEnd && highEnd) {
+    video.currentTime = message.progress;
+    setState({
+      message: 'Progress updated'
+    })
   }
 }
 
 const play = (message) => {
+  console.log('play')
+  video.currentTime = message.progress;
   video.play();
+  setState({
+    message: 'Playing by other player'
+  })
 }
 
 const pause = (message) => {
+  console.log('pause')
   video.pause();
+  setState({
+    message: 'Paused by other player'
+  })
 }
 
 const playStateTypes = {
@@ -103,3 +162,7 @@ chrome.runtime.onMessage.addListener(
     messageTypes[request.type] && messageTypes[request.type](request, sender, sendResponse)
   });
 
+
+document.body.addEventListener("change", function(e) {
+    console.log(e.target);
+})

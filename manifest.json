@@ -27,6 +27,7 @@
         "https://www.netflix.com/*"
       ],
       "js": [
+        "js/helpers.js",
         "js/inject.js"
       ]
     }

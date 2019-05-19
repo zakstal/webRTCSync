@@ -1,4 +1,9 @@
 
+function fragmentFromString(strHTML) {
+    var temp = document.createElement('template');
+    temp.innerHTML = strHTML;
+    return temp.content;
+}
 /**
  * Pub sub
  */
@@ -53,6 +58,10 @@ StateEvents.prototype = {
     return this.state;
   },
 
+  getStateKeys: function () {
+    return Object.keys(this.state);
+  },
+
   notifyEach: function (keys) {
     keys.forEach(this.notify.bind(this));
   },
@@ -69,15 +78,26 @@ StateEvents.prototype = {
 const findById = id => document.getElementById(id);
 const find = selector => document.querySelectorAll(selector);
 
+const pick = (originalObj, arr) => {
+  return arr.reduce((obj, value) => {
+    if (originalObj[value]) {
+      obj[value] = originalObj[value];
+    }
+    return obj
+  }, {})
+}
+
 /**
  * @param {String} selector
  * @param {Object} config
  */
 const CreateElements = function (selector, config, stateEvents) {
-  this.els = find(selector)[0]
   this.config = config;
+  selector ? this.els = find(selector)[0] : this.render();
   this.stateEvents = stateEvents;
   this.subscribeAll();
+  this.setStyle();
+  this.documentNode = null;
 
   if (this.els.length === 1) {
     return this.els[0];
@@ -95,7 +115,8 @@ CreateElements.prototype = {
       return;
     }
 
-    const entries = Object.entries(this.config);
+    const configState = pick(this.config, this.stateEvents.getStateKeys());
+    const entries = Object.entries(configState);
     // Maybe confusing. The functions (object values) in config which should be a map to
     // global state values will want to receive changed state and the current objects element.
     const state = entries.reduce((obj, [key, func]) => {
@@ -104,6 +125,7 @@ CreateElements.prototype = {
       obj[key] = (state) => {
         // func(state, el).bind(this)
         func.apply(this, [state, el]);
+        this.config.render && this.render();
       }
       return obj;
     }, {});
@@ -123,6 +145,33 @@ CreateElements.prototype = {
 
   innerText: function(text) {
     this.els.innerText = text;
+  },
+
+  setStyle: function (style = {}) {
+    const newStyle = {
+      ...this.style,
+      ...style,
+    }
+
+    this.style = newStyle;
+    const entries = Object.entries(this.style);
+    entries.forEach(([key, value]) => {
+      this.els.styles[key] = value
+    })
+  },
+
+  render: function () {
+    console.log('render', document.body.contains(this.els))
+    // if(document.body.contains(this.els)) {
+    //     return
+    // }
+    const node = this.documentNode || document.createDocumentFragment();
+    const nodeString = this.config.render();
+    this.els = fragmentFromString(nodeString);
+    node.appendChild(this.els);
+    const [action, parentSelector] = this.config.parent;
+    const parent = find(parentSelector)[0];
+    parent[action](node);
   }
 }
 

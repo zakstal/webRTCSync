@@ -1,70 +1,105 @@
-console.log('hoooooooo')
-var scaleFactor = 0.25;
 
-/**
- * Checks if canvas is tainted. meaning the src has been loaded with another domain
- */
-function isTainted(ctx) {
-    try {
-        var pixel = ctx.getImageData(0, 0, 1, 1);
-        return false;
-    } catch(err) {
-        return (err.code === 18);
-    }
+console.log('injected')
+
+const sendMessage = (message, response) => {
+  chrome.runtime.sendMessage(message, response);
 }
 
-function capture(video, scaleFactor) {
-    if (scaleFactor == null) {
-        scaleFactor = 1;
-    }
-    var w = video.videoWidth * scaleFactor;
-    var h = video.videoHeight * scaleFactor;
-    var canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    var ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, w, h);
-    return canvas;
+let video = null;
+
+// Assume there is only one video on the page
+const activate = (request, sender, sendResponse) => {
+  video = document.getElementsByTagName('video')[0];
+  if (!video) {
+    console.log('no video found!')
+    sendResponse({
+      type: 'activate',
+      error: true,
+      message: 'Video element not found'
+    })
+  }
+  console.log('video found!')
+
+  video.onprogress = e => {
+    // console.log('progress', e)
+    sendMessage({
+      type: 'playState',
+      error: false,
+      message: 'Video playing',
+      playState: 'progress',
+      progress: video.currentTime,
+      event: e
+    })
+  }
+
+  video.onpause = e => {
+    // console.log('progress', e)
+    sendMessage({
+      type: 'playState',
+      error: false,
+      message: 'Video paused',
+      playState: 'pause',
+      event: e
+    })
+  }
+
+  video.onplay = e => {
+    // console.log('progress', e)
+    sendMessage({
+      type: 'playState',
+      error: false,
+      message: 'Play video',
+      playState: 'play',
+      event: e
+    })
+  }
+
+  sendResponse({
+    type: 'activate',
+    error: false,
+    message: 'video found!'
+  })
 }
 
-/**
- * Invokes the <code>capture</code> function and attaches the canvas element to the DOM.
- */
-function shoot() {
-    const video = document.querySelectorAll('video')[0];
-    video.origin = 'anonymous';
-    var canvas = capture(video, scaleFactor);
-    if (isTainted(canvas)) {
-      return '';
-    }
+const progress = (message) => {
+  if (video.currentTime !== message.progress) {
+    video.currentTime = message.progress
+  }
+}
 
-    return canvas.toDataURL();
+const play = (message) => {
+  video.play();
+}
+
+const pause = (message) => {
+  video.pause();
+}
+
+const playStateTypes = {
+  progress,
+  pause,
+  play,
+}
+
+const receiveData = (data) => {
+  if (!playStateTypes[data.message.playState]) {
+    console.log('missing', data.message.type)
+  }
+
+  playStateTypes[data.message.playState] && playStateTypes[data.message.playState](data.message)
+}
+
+const messageTypes = {
+  activate,
+  receiveData
 }
 
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
-    if (request.greeting == "hello") {
-      const video = document.querySelectorAll('video')[0];
-      const source = video.children[0].src
-      const src = video.src || source
-      const screenShot = shoot();
-      sendResponse({farewell: src, screenShot: screenShot});
+    if (!messageTypes[request.type]) {
+      console.log('no message of type', request.type)
     }
+
+    messageTypes[request.type] && messageTypes[request.type](request, sender, sendResponse)
   });
 
-
-chrome.runtime.sendMessage({greeting: "hello"}, function(response) {
-  if (response.farewell) {
-    const video = document.querySelectorAll('video')[0];
-    const source = video.children[0].src
-    const src = video.src || source
-    if (window.location.href === src) {
-      return ;
-    }
-
-    chrome.runtime.sendMessage({greeting: "saveit", src: src, location: window.location.href, title: document.title}, function(response) {
-      window.location.href = src;
-    })
-
-  }
-});

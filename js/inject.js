@@ -18,7 +18,7 @@ createElement('', {
   parent: ['appendChild', 'body'],
   render: function () {
     return `
-      <div id="message" style="position: fixed; top: 0; left: 0; height: 10px; min-width: 10px; background: red;">
+      <div id="message" style="position: fixed; top: 0; left: 0; height: 15px; min-width: 10px; background: #fff">
         Welcome!
       </div>
     `
@@ -51,18 +51,30 @@ const activate = (request, sender, sendResponse) => {
   }
   console.log('video found!')
 
-  video.onprogress = e => {
+  video.onseeked = e => {
     // console.log('progress', e)
     sendMessage({
       type: 'playState',
       error: false,
-      message: 'Video playing',
-      playState: 'progress',
+      message: 'Video seeked',
+      playState: 'seeked',
       progress: video.currentTime,
-      now: Date.now(),
       event: e
     })
   }
+
+  // video.onprogress = e => {
+  //   // console.log('progress', e)
+  //   sendMessage({
+  //     type: 'playState',
+  //     error: false,
+  //     message: 'Video playing',
+  //     playState: 'progress',
+  //     progress: video.currentTime,
+  //     now: Date.now(),
+  //     event: e
+  //   })
+  // }
 
   video.onpause = e => {
     // console.log('progress', e)
@@ -94,27 +106,35 @@ const activate = (request, sender, sendResponse) => {
   })
 }
 
-const progress = (message) => {
-  console.log('progressing')
-  const millisec = message.now;
-  const nowMill = Date.now();
-  const lagSeconds = (nowMill - millisec) / 1000;
+// const progress = (message) => {
+//   console.log('progressing')
+//   const millisec = message.now;
+//   const nowMill = Date.now();
+//   const lagSeconds = (nowMill - millisec) / 1000;
 
-  // adjust for the time delay in sending the message
-  const progress = message.progress + lagSeconds;
-  const currentTime = video.currentTime;
+//   // adjust for the time delay in sending the message
+//   const progress = message.progress + lagSeconds;
+//   const currentTime = video.currentTime;
 
-  // current time more than a second ahead of the other players current time
-  const lowEnd = currentTime > (progress - 1)
+//   // current time more than a second ahead of the other players current time
+//   const lowEnd = currentTime > (progress - 1)
 
-  // current time less than a second behind the other players current time
-  const highEnd = currentTime < (progress + 1)
-  if (lowEnd && highEnd) {
-    video.currentTime = message.progress;
-    setState({
-      message: 'Progress updated'
-    })
-  }
+//   // current time less than a second behind the other players current time
+//   const highEnd = currentTime < (progress + 1)
+//   if (lowEnd && highEnd) {
+//     video.currentTime = message.progress;
+//     setState({
+//       message: 'Progress updated'
+//     })
+//   }
+// }
+
+const seeked = (message) => {
+  console.log('play')
+  video.currentTime = message.progress;
+  setState({
+    message: 'Seeked by other player'
+  })
 }
 
 const play = (message) => {
@@ -138,6 +158,7 @@ const playStateTypes = {
   progress,
   pause,
   play,
+  seeked,
 }
 
 const receiveData = (data) => {

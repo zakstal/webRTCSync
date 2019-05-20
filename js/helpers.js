@@ -222,3 +222,27 @@ chrome.runtime.onMessage.addListener(
     messageTypes[request.type] && messageTypes[request.type](request, sender, sendResponse)
   });
 }
+
+const setIconPath = path => {
+  chrome.browserAction.setIcon({path: icon});
+}
+
+const ICON_PATHS = {
+  default: '../img/icon128.png',
+  waiting: '../img/icon128.waiting.png',
+  connected: '../img/icon128.connected.png',
+  error: '../img/icon128.error.png'
+}
+
+const ICON_COLORS = {
+  default: 'transparent',
+  waiting: '#FFDE00',
+  connected: '#5DEB8F',
+  error: '#E40613'
+}
+
+const setIcon = icon => {
+  console.log('ICON_PATHS[icon]', ICON_PATHS[icon])
+  chrome.browserAction.setBadgeText({text:" "});
+  chrome.browserAction.setBadgeBackgroundColor({color:  ICON_COLORS[icon]});
+}

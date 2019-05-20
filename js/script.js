@@ -68,6 +68,7 @@ const startWebRTC = (request, sender, sendResponse) => {
     p = new SimplePeer({ initiator: !request.hash })
 
     p.on('error', err => {
+      setIcon('error');
       sendMessage({
         type: 'error',
         error: true,
@@ -76,10 +77,12 @@ const startWebRTC = (request, sender, sendResponse) => {
     })
 
     p.on('signal', data => {
+      setIcon('waiting');
       sendMessageScaleDrone(JSON.stringify(data))
     })
 
     p.on('connect', () => {
+      setIcon('connected');
        sendMessage({
         type: 'webRTCLocation',
         error: false,

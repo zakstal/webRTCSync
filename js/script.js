@@ -81,6 +81,10 @@ const startWebRTC = (request, sender, sendResponse) => {
       sendMessageScaleDrone(JSON.stringify(data))
     })
 
+    p.on('close', () => {
+      setIcon('waiting');
+    });
+
     p.on('connect', () => {
       setIcon('connected');
        sendMessage({

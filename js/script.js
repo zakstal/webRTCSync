@@ -1,7 +1,9 @@
 var p = null;
 var drone = null
+var myId = Math.floor(Math.random() * 0xFFFFFF).toString(16).substring(1)
 
 const startWebRTC = (request, sender, sendResponse) => {
+  setIcon('waiting');
   if (!request.hash) {
     location.hash = Math.floor(Math.random() * 0xFFFFFF).toString(16);
   }
@@ -96,17 +98,21 @@ const startWebRTC = (request, sender, sendResponse) => {
     })
 
     p.on('data', data => {
+      const parsed = JSON.parse(data);
+      if (parsed.myId === myId) {
+        return;
+      }
       // console.log('data: ' + data)
       sendMessage({
         type: 'receiveData',
         error: false,
-        message: JSON.parse(data),
+        message: parsed,
       })
 
       messageCurrentTab({
         type: 'receiveData',
         error: false,
-        message: JSON.parse(data),
+        message: parsed,
       })
     })
 
@@ -125,7 +131,10 @@ const startWebRTC = (request, sender, sendResponse) => {
 
 const playState = (data) => {
   // console.log('data', data)
-  p && p.send(JSON.stringify(data))
+  p && p.send(JSON.stringify({
+    ...data,
+    myId,
+  }))
 }
 
 const messageTypes = {

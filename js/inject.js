@@ -1,5 +1,6 @@
 
 console.log('injected', sendMessage)
+var injectedId = Math.floor(Math.random() * 0xFFFFFF).toString(16).substring(1)
 
 // const sendMessage = (message, response) => {
 //   chrome.runtime.sendMessage(message, response);
@@ -38,6 +39,13 @@ createElement('', {
 
 let video = null;
 
+const preventEmit = {
+  seek: false,
+  play: false,
+  pause: false,
+}
+
+const seekThrottle = createThrottle();
 // Assume there is only one video on the page
 const activate = (request, sender, sendResponse) => {
   video = document.getElementsByTagName('video')[0];
@@ -51,16 +59,23 @@ const activate = (request, sender, sendResponse) => {
   }
   console.log('video found!')
 
-  video.onseeked = e => {
+  video.onseeking = e => {
+    if (preventEmit.seek || preventEmit.play) {
+      preventEmit.seek = false;
+      return
+    }
     // console.log('progress', e)
-    sendMessage({
-      type: 'playState',
-      error: false,
-      message: 'Video seeked',
-      playState: 'seeked',
-      progress: video.currentTime,
-      event: e
-    })
+    seekThrottle(() => {
+      sendMessage({
+        type: 'playState',
+        error: false,
+        message: 'Video seeked',
+        playState: 'seeked',
+        progress: video.currentTime,
+        event: e,
+        injectedId
+      });
+    });
   }
 
   // video.onprogress = e => {
@@ -77,17 +92,26 @@ const activate = (request, sender, sendResponse) => {
   // }
 
   video.onpause = e => {
+    if (preventEmit.pause) {
+      preventEmit.pause = false;
+      return
+    }
     // console.log('progress', e)
     sendMessage({
       type: 'playState',
       error: false,
       message: 'Video paused',
       playState: 'pause',
-      event: e
+      event: e,
+      injectedId
     })
   }
 
   video.onplay = e => {
+    if (preventEmit.play) {
+      preventEmit.play = false;
+      return
+    }
     // console.log('progress', e)
     sendMessage({
       type: 'playState',
@@ -95,7 +119,8 @@ const activate = (request, sender, sendResponse) => {
       message: 'Play video',
       playState: 'play',
       progress: video.currentTime,
-      event: e
+      event: e,
+      injectedId
     })
   }
 
@@ -130,7 +155,14 @@ const activate = (request, sender, sendResponse) => {
 // }
 
 const seeked = (message) => {
-  console.log('play')
+  console.log('seeked')
+    console.log('message.injectedId', message.injectedId )
+  console.log('injectedId', injectedId )
+  console.log('message.injectedId === injectedId', message.injectedId === injectedId )
+  if (message.injectedId === injectedId) {
+    return;
+  }
+  preventEmit.seek = false;
   video.currentTime = message.progress;
   setState({
     message: 'Seeked by other player'
@@ -138,7 +170,14 @@ const seeked = (message) => {
 }
 
 const play = (message) => {
-  console.log('play')
+  console.log('play', message.injectedId )
+  console.log('message.injectedId', message.injectedId )
+  console.log('injectedId', injectedId )
+  console.log('message.injectedId === injectedId', message.injectedId === injectedId )
+  if (message.injectedId === injectedId) {
+    return;
+  }
+  preventEmit.play = false;
   video.currentTime = message.progress;
   video.play();
   setState({
@@ -148,6 +187,10 @@ const play = (message) => {
 
 const pause = (message) => {
   console.log('pause')
+  if (message.injectedId === injectedId) {
+    return;
+  }
+  preventEmit.pause = false;
   video.pause();
   setState({
     message: 'Paused by other player'
@@ -155,7 +198,7 @@ const pause = (message) => {
 }
 
 const playStateTypes = {
-  progress,
+  // progress,
   pause,
   play,
   seeked,

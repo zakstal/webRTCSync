@@ -246,3 +246,18 @@ const setIcon = icon => {
   chrome.browserAction.setBadgeText({text:" "});
   chrome.browserAction.setBadgeBackgroundColor({color:  ICON_COLORS[icon]});
 }
+
+const createThrottle = () => {
+  let timeout = null;
+  return callback => {
+    if (timeout) {
+      return;
+    }
+
+    timeout = setTimeout(() => {
+      timeout = null;
+    }, 2000)
+
+    callback();
+  }
+}
